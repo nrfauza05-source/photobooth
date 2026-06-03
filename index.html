@@ -379,9 +379,20 @@
         // Riwayat stiker untuk fungsi Undo
         let riwayatStiker = [];
 
-        // Audio Synthesizer Bawaan Browser
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Audio diset null dulu, baru dibuat saat user berinteraksi agar HP tidak memblokir kode
+        let audioCtx = null;
+
         function playSound(type) {
+            // Aktifkan AudioContext hanya ketika tombol mulai ditekan demi keamanan browser HP
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            // Jaga-jaga jika status audio masih tersuspensi oleh browser HP
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.connect(gain);
@@ -413,7 +424,11 @@
 
             try {
                 const constraints = {
-                    video: { facingMode: modeKamera },
+                    video: { 
+                        facingMode: modeKamera,
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
                     audio: false
                 };
 
@@ -429,7 +444,7 @@
 
                 setFilter(filterAktif);
             } catch (err) {
-                alert("Kamera tidak bisa diakses!");
+                alert("Kamera tidak bisa diakses! Pastikan izin kamera di browser HP kamu sudah diaktifkan.");
             }
         }
 
