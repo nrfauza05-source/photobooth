@@ -1,217 +1,599 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Capture Club by nrfauza</title>
-    
-    <!-- Font imut & aesthetic -->
+
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
-    <!-- Library untuk download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         body {
             margin: 0;
             font-family: 'Fredoka', cursive;
-            background-color: #f7d6e0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            color: #4a4a4a;
+            background: #fff5f8;
+            text-align: center;
+            color: #555;
+            overflow-x: hidden;
+        }
+
+        /* Animasi background dot/titik-titik pastel */
+        body::before {
+            content: "";
+            position: fixed;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(#ffb6d9 15%, transparent 15%),
+                radial-gradient(#bbeeef 15%, transparent 15%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            opacity: 0.25;
+            animation: move 25s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes move {
+            0% { transform: translate(0, 0) }
+            100% { transform: translate(-180px, -180px) }
         }
 
         h1 {
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #ef476f;
-            text-shadow: 2px 2px #ffffff;
+            color: #ff69b4;
+            text-shadow: 2px 2px white;
+            margin-top: 25px;
         }
 
-        /* PERBAIKAN UTAMA: Kamera & Hasil Foto tidak akan ketarik lagi */
-        .camera-container {
-            width: 320px;
-            height: 240px;
-            border: 6px dashed #ffffff;
-            border-radius: 20px;
-            overflow: hidden;
-            background-color: #000;
-            position: relative;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        h3 {
+            margin-bottom: 5px;
+            font-weight: 400;
         }
 
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* Memotong otomatis pinggiran kamera agar proporsi wajah pas */
-            transform: scaleX(-1); /* Efek cermin biar alami */
-        }
-
-        .buttons {
-            margin: 20px 0;
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            background-color: #ef476f;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-family: 'Fredoka', cursive;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        button.secondary {
-            background-color: #118ab2;
-        }
-
-        /* Frame Photo Strip ala Korea (2x6 inci proporsional) */
-        .photo-strip {
-            width: 160px;
-            background-color: #ffffff;
+        .controls-container {
+            background: rgba(255, 255, 255, 0.6);
+            max-width: 580px;
+            margin: 10px auto;
             padding: 15px;
-            display: flex;
-            flex-direction: column;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+        }
+
+        .tema-btn {
+            border: 3px solid white;
+            width: 35px;
+            height: 35px;
+            margin: 5px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .tema-btn:hover { transform: scale(1.2); }
+
+        .filter-mini-btn,
+        .kata-btn,
+        .layout-btn {
+            background: #fff;
+            border: 2px solid #ffb6d9;
+            padding: 6px 15px;
+            margin: 4px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Fredoka', sans-serif;
+            color: #555;
+            transition: 0.2s;
+        }
+
+        .filter-mini-btn:hover,
+        .kata-btn:hover,
+        .layout-btn:hover { background: #ffdeeb; }
+
+        .kata-btn.aktif,
+        .layout-btn.aktif {
+            background: #ff69b4;
+            color: white;
+            border-color: #ff69b4;
+        }
+
+        .stiker-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: 0.2s;
+        }
+
+        .stiker-btn:hover { transform: scale(1.3); }
+        .stiker-btn.aktif {
+            filter: drop-shadow(0 0 4px #ff69b4);
+            transform: scale(1.2);
+        }
+
+        /* Kamera Container & Efek Flash / Timer */
+        .camera-box {
+            position: relative;
+            display: inline-block;
+            margin: 15px;
+        }
+
+        /* PERBAIKAN UTAMA: Kamera Berbentuk Box Tetap Pas Tanpa Ketarik */
+        #camera {
+            width: 320px;
+            height: 240px; /* Dikunci tingginya agar rasio 4:3 seimbang */
+            border-radius: 25px;
+            border: 6px solid white;
+            box-shadow: 0 10px 20px rgba(255, 105, 180, 0.15);
+            transition: transform 0.3s ease;
+            object-fit: cover; /* Memangkas sisi samping/atas video otomatis agar proporsi wajah normal */
+        }
+
+        #timerOverlay {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            color: #ff69b4;
+            text-shadow: 4px 4px 0px white;
+            font-weight: bold;
+            display: none;
+            pointer-events: none;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        #flashOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.1s ease-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); }
+            100% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        /* PHOTOSTRIP STYLE (DYNAMIC LAYOUT) */
+        .photostrip {
+            width: 260px;
+            margin: 25px auto;
+            padding: 20px 15px;
+            border-radius: 12px;
+            background: #ffdeeb;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            transition: 0.3s;
+        }
+
+        /* KONDISI JIKA MODE GRID 2X2 AKTIF */
+        .photostrip.mode-grid { width: 480px !important; }
+        .photostrip.mode-grid .frames-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            border-radius: 4px;
+            max-width: 460px;
+            margin: 0 auto;
+        }
+        .photostrip.mode-grid .frame { margin: 0 auto; }
+
+        #judulTema {
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            font-weight: 600;
         }
 
-        .photo-frame {
-            width: 100%;
-            height: 110px;
-            background-color: #eee;
+        .frame {
+            width: 220px;
+            height: 140px;
+            margin: 10px auto;
+            background: #ffffff;
+            border-radius: 8px;
             overflow: hidden;
-            border-radius: 2px;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
         }
 
-        .photo-frame img {
+        .frame canvas {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Memotong hasil jepretan foto agar tidak gepeng */
+            cursor: crosshair;
+        }
+
+        #tanggal {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 15px;
+            margin-bottom: 2px;
         }
 
         .watermark {
-            text-align: center;
-            font-size: 11px;
-            color: #a3a3a3;
-            font-weight: 600;
-            margin-top: 5px;
-            letter-spacing: 1px;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin-top: 0px;
+            margin-bottom: 0px;
+            opacity: 0.8;
         }
 
-        #canvas-hidden {
-            display: none;
+        /* TOMBOL UTAMA */
+        button.action {
+            background: #ff69b4;
+            color: white;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 25px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 14px;
+            box-shadow: 0 5px 10px rgba(255, 105, 180, 0.2);
+            transition: 0.2s;
         }
+
+        button.action:hover {
+            transform: translateY(-2px);
+            background: #ff4fa3;
+        }
+
+        button.download-btn {
+            background: #62c39b;
+            box-shadow: 0 5px 10px rgba(98, 195, 155, 0.2);
+        }
+
+        button.download-btn:hover { background: #4db388; }
     </style>
 </head>
+
 <body>
 
-    <h1>📸 Capture Club</h1>
-    
-    <div class="camera-container">
-        <video id="webcam" autoplay playsinline></video>
+    <div id="flashOverlay"></div>
+    <h1>📸 Kawaii Photobooth Premium</h1>
+
+    <div class="controls-container">
+        <h3>🧸 Pilih Warna Background</h3>
+        <button class="tema-btn" style="background:#ffdeeb" title="Pink" onclick="pilihTema('pink')"></button>
+        <button class="tema-btn" style="background:#252525" title="Black" onclick="pilihTema('black')"></button>
+        <button class="tema-btn" style="background:#f4e3cd" title="Teddy Bear" onclick="pilihTema('teddy')"></button>
+        <button class="tema-btn" style="background:#e0f4ff" title="Blue Sky" onclick="pilihTema('blue')"></button>
+        <button class="tema-btn" style="background:#eafae3" title="Pastel Macaron" onclick="pilihTema('rainbow')"></button>
+        <button class="tema-btn" style="background:#f3e8ff" title="Lilac" onclick="pilihTema('lilac')"></button>
+        <button class="tema-btn" style="background:#e2ecc8" title="Matcha" onclick="pilihTema('matcha')"></button>
+
+        <h3>🎞️ Pilih Bentuk Frame Layout</h3>
+        <button id="btnLayoutV" class="layout-btn aktif" onclick="gantiLayout('vertikal')">↔️ Vertikal Strip</button>
+        <button id="btnLayoutG" class="layout-btn" onclick="gantiLayout('grid')">🔲 Kotak Grid 2x2</button>
+
+        <h3>✨ Filter Wajah (Beauty)</h3>
+        <button class="filter-mini-btn" onclick="setFilter('normal')">Normal Glow</button>
+        <button class="filter-mini-btn" onclick="setFilter('beauty')">🌸 Soft Beauty</button>
+        <button class="filter-mini-btn" onclick="setFilter('bw')">🖤 Retro B&W</button>
+        <button class="filter-mini-btn" style="border-color: #ff9f43;" onclick="setFilter('sunset')">🌇 Warm Sunset</button>
+        <button class="filter-mini-btn" style="border-color: #2ed573;" onclick="setFilter('matrix')">💚 Matrix</button>
     </div>
 
-    <div class="buttons">
-        <button id="capture-btn">Ambil Foto</button>
-        <button id="switch-btn" class="secondary">Balik Kamera</button>
-        <button id="download-btn" class="secondary" style="background-color: #06d6a0; display: none;">Simpan</button>
+    <div class="camera-box">
+        <video id="camera" autoplay playsinline></video>
+        <div id="timerOverlay">3</div>
+        <br>
+        <button class="filter-mini-btn" style="background:#fff; border:2px solid #62c39b; font-weight:600;"
+            onclick="gantiKameraHP()">🔄 Balik Kamera (Depan/Belakang)</button>
     </div>
 
-    <!-- Tampilan Frame Strip -->
-    <div class="photo-strip" id="strip-container">
-        <div class="photo-frame"><img id="img1" src="" alt=""></div>
-        <div class="photo-frame"><img id="img2" src="" alt=""></div>
-        <div class="photo-frame"><img id="img3" src="" alt=""></div>
-        <div class="watermark">CAPTURE CLUB</div>
+    <div style="margin: 10px auto;">
+        <button class="action" onclick="mulaiSesiFoto()">📸 Ambil Foto (Timer 3s)</button>
+        <button class="action" style="background:#b5b5b5; box-shadow:none;" onclick="resetFoto()">🔄 Reset</button>
+        <button class="action download-btn" onclick="downloadPhotostrip()">🖼 Download Strip</button>
     </div>
 
-    <!-- Tempat memproses gambar di balik layar -->
-    <canvas id="canvas-hidden"></canvas>
+    <div class="controls-container">
+        <h3>✍️ Ganti Kata-kata Judul Atas</h3>
+        <button class="kata-btn" onclick="gantiJudul('Happy Day ✨')">Happy Day ✨</button>
+        <button class="kata-btn" onclick="gantiJudul('Bestie Vibes 💖')">Bestie Vibes 💖</button>
+        <button class="kata-btn" onclick="gantiJudul('Sweet Memories 🍓')">Sweet Memories 🍓</button>
+        <button class="kata-btn" onclick="gantiJudul('Cute Moment 🧸')">Cute Moment 🧸</button>
+        <button class="kata-btn" onclick="gantiJudul('Love Ya! 🫶')">Love Ya! 🫶</button>
+        <button class="kata-btn" style="border-color: #ff4757;" onclick="gantiJudul('Happy Anniversary 🖤')">Happy Anniversary 🖤</button>
+        <button class="kata-btn" style="border-color: #ffa502;" onclick="gantiJudul('Happy Graduation 🎓')">Happy Graduation 🎓</button>
+
+        <h3>🎀 Pilih Stiker Mini</h3>
+        <button class="stiker-btn" onclick="pilihStiker('🎀', this)">🎀</button>
+        <button class="stiker-btn" onclick="pilihStiker('✨', this)">✨</button>
+        <button class="stiker-btn" onclick="pilihStiker('🌸', this)">🌸</button>
+        <button class="stiker-btn" onclick="pilihStiker('💖', this)">💖</button>
+        <button class="stiker-btn" onclick="pilihStiker('🐾', this)">🐾</button>
+        <br>
+        <button class="filter-mini-btn" style="background:#fff0f5; border:1px solid #aaa; font-size:12px; margin-top:5px;" onclick="undoStiker()">↩️ Hapus Stiker Terakhir</button>
+    </div>
+
+    <div id="strip" class="photostrip">
+
+        <h3 id="judulTema">🌸 Kawaii Pink 🌸</h3>
+
+        <div class="frames-container">
+            <div class="frame"><canvas id="foto1" onclick="tempelStiker(1, event)"></canvas></div>
+            <div class="frame"><canvas id="foto2" onclick="tempelStiker(2, event)"></canvas></div>
+            <div class="frame"><canvas id="foto3" onclick="tempelStiker(3, event)"></canvas></div>
+            <div class="frame"><canvas id="foto4" onclick="tempelStiker(4, event)"></canvas></div>
+        </div>
+
+        <p id="tanggal"></p>
+        <p class="watermark" id="wmTeks">by: nrfauza</p>
+
+    </div>
 
     <script>
-        const video = document.getElementById('webcam');
-        const captureBtn = document.getElementById('capture-btn');
-        const switchBtn = document.getElementById('switch-btn');
-        const downloadBtn = document.getElementById('download-btn');
-        const canvas = document.getElementById('canvas-hidden');
-        const ctx = canvas.getContext('2d');
+        let video = document.getElementById("camera");
+        let nomor = 1;
+        let filterAktif = "normal";
+        let stikerTerpilih = "";
+        let warnaTeksDefault = "#8a4f6e";
+        let arusKamera = null;
+        let modeKamera = "user"; 
 
-        let currentStream = null;
-        let useFrontCamera = true;
-        let photoCount = 0;
-        const images = [document.getElementById('img1'), document.getElementById('img2'), document.getElementById('img3')];
+        let riwayatStiker = [];
+        let audioCtx = null;
 
-        // Fungsi menyalakan kamera dengan rasio aman
-        async function startCamera() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+        function playSound(type) {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
             }
 
-            const constraints = {
-                video: {
-                    facingMode: useFrontCamera ? "user" : "environment",
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                },
-                audio: false
-            };
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
 
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
-            } catch (error) {
-                alert("Gagal mengakses kamera. Pastikan izin sudah diberikan ya!");
+            if (type === 'tick') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            } else if (type === 'shutter') {
+                let bufferSize = audioCtx.sampleRate * 0.1;
+                let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+                let noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                noise.connect(audioCtx.destination);
+                noise.start();
             }
         }
 
-        // Ambil Foto dengan pemotongan cerdas (biar gak ketarik)
-        captureBtn.addEventListener('click', () => {
-            if (photoCount >= 3) {
-                // Reset kalau sudah 3 foto
-                photoCount = 0;
-                images.forEach(img => img.src = "");
-                downloadBtn.style.display = "none";
+        async function startCamera() {
+            if (arusKamera) {
+                arusKamera.getTracks().forEach(track => track.stop());
             }
 
-            // Atur canvas internal sesuai ukuran video asli
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: modeKamera,
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                };
 
-            // Efek mirror di canvas jika pakai kamera depan
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (useFrontCamera) {
+                arusKamera = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = arusKamera;
+
+                if (modeKamera === "environment") {
+                    video.style.transform = "scaleX(1)";
+                } else {
+                    video.style.transform = "scaleX(-1)";
+                }
+
+                setFilter(filterAktif);
+            } catch (err) {
+                alert("Kamera tidak bisa diakses! Pastikan izin kamera di browser HP kamu sudah diaktifkan.");
+            }
+        }
+
+        function gantiKameraHP() {
+            modeKamera = (modeKamera === "user") ? "environment" : "user";
+            startCamera();
+        }
+
+        function gantiLayout(jenis) {
+            let strip = document.getElementById("strip");
+            document.getElementById("btnLayoutV").classList.remove("aktif");
+            document.getElementById("btnLayoutG").classList.remove("aktif");
+
+            if (jenis === 'grid') {
+                strip.classList.add("mode-grid");
+                document.getElementById("btnLayoutG").classList.add("aktif");
+            } else {
+                strip.classList.remove("mode-grid");
+                document.getElementById("btnLayoutV").classList.add("aktif");
+            }
+        }
+
+        function pilihTema(tema) {
+            let strip = document.getElementById("strip");
+            let judul = document.getElementById("judulTema");
+            let wm = document.getElementById("wmTeks");
+
+            if (tema === "pink") { strip.style.background = "#ffdeeb"; judul.innerHTML = "🌸 Kawaii Pink 🌸"; warnaTeksDefault = "#8a4f6e"; }
+            if (tema === "black") { strip.style.background = "#252525"; judul.innerHTML = "🖤 Elegant Black 🖤"; warnaTeksDefault = "white"; }
+            if (tema === "teddy") { strip.style.background = "#f4e3cd"; judul.innerHTML = "🧸 Teddy Bear 🧸"; warnaTeksDefault = "#6e4e37"; }
+            if (tema === "rainbow") { strip.style.background = "#eafae3"; judul.innerHTML = "🍦 Pastel Macaron 🍦"; warnaTeksDefault = "#4f6e52"; }
+            if (tema === "blue") { strip.style.background = "#e0f4ff"; judul.innerHTML = "💙 Soft Blue Sky 💙"; warnaTeksDefault = "#4f658a"; }
+            if (tema === "lilac") { strip.style.background = "#f3e8ff"; judul.innerHTML = "🔮 Lovely Lilac 🔮"; warnaTeksDefault = "#6b21a8"; }
+            if (tema === "matcha") { strip.style.background = "#e2ecc8"; judul.innerHTML = "🍵 Matcha Latte 🍵"; warnaTeksDefault = "#3f4e24"; }
+
+            judul.style.color = warnaTeksDefault;
+            wm.style.color = warnaTeksDefault;
+        }
+
+        function gantiJudul(teksBaru) { document.getElementById("judulTema").innerHTML = teksBaru; }
+
+        function setFilter(jenisFilter) {
+            filterAktif = jenisFilter;
+            let mirrorScale = (modeKamera === "user") ? "-1" : "1";
+
+            if (jenisFilter === 'normal') video.style.filter = `brightness(1.05) contrast(1.05) scaleX(${mirrorScale})`;
+            if (jenisFilter === 'beauty') video.style.filter = `brightness(1.2) contrast(0.92) saturate(1.1) scaleX(${mirrorScale})`;
+            if (jenisFilter === 'bw') video.style.filter = `grayscale(1) contrast(1.15) scaleX(${mirrorScale})`;
+            if (jenisFilter === 'sunset') video.style.filter = `sepia(0.3) saturate(1.4) contrast(1.05) scaleX(${mirrorScale})`;
+            if (jenisFilter === 'matrix') video.style.filter = `hue-rotate(90deg) saturate(1.5) contrast(1.2) scaleX(${mirrorScale})`;
+        }
+
+        function mulaiSesiFoto() {
+            if (nomor > 4) return alert("4 foto sudah terisi 💖");
+
+            let countdown = 3;
+            let timerOverlay = document.getElementById("timerOverlay");
+            timerOverlay.style.display = "block";
+            timerOverlay.innerHTML = countdown;
+            playSound('tick');
+
+            let interval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    timerOverlay.innerHTML = countdown;
+                    playSound('tick');
+                } else {
+                    clearInterval(interval);
+                    timerOverlay.style.display = "none";
+
+                    let flash = document.getElementById("flashOverlay");
+                    flash.style.opacity = "1";
+                    playSound('shutter');
+                    setTimeout(() => { flash.style.opacity = "0"; }, 150);
+
+                    ambilFoto();
+                }
+            }, 1000);
+        }
+
+        function ambilFoto() {
+            let canvas = document.getElementById("foto" + nomor);
+            let ctx = canvas.getContext("2d");
+
+            canvas.width = 440;
+            canvas.height = 280;
+
+            ctx.filter = "none";
+            if (filterAktif === 'beauty') ctx.filter = "brightness(1.2) contrast(0.92) saturate(1.1)";
+            else if (filterAktif === 'bw') ctx.filter = "grayscale(1) contrast(1.15)";
+            else if (filterAktif === 'sunset') ctx.filter = "sepia(0.3) saturate(1.4) contrast(1.05)";
+            else if (filterAktif === 'matrix') ctx.filter = "hue-rotate(90deg) saturate(1.5) contrast(1.2)";
+            else ctx.filter = "brightness(1.05) contrast(1.05)";
+
+            // Ganti cara menggambar canvas agar hasil potretnya ikut memotong proporsional (object-fit versi canvas)
+            let videoRatio = video.videoWidth / video.videoHeight;
+            let canvasRatio = canvas.width / canvas.height;
+            let sx, sy, sw, sh;
+
+            if (videoRatio > canvasRatio) {
+                sh = video.videoHeight;
+                sw = video.videoHeight * canvasRatio;
+                sx = (video.videoWidth - sw) / 2;
+                sy = 0;
+            } else {
+                sw = video.videoWidth;
+                sh = video.videoWidth / canvasRatio;
+                sx = 0;
+                sy = (video.videoHeight - sh) / 2;
+            }
+
+            if (modeKamera === "user") {
                 ctx.translate(canvas.width, 0);
                 ctx.scale(-1, 1);
-            }
-
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Kembalikan efek mirror setelah gambar digambar
-            if (useFrontCamera) {
+            } else {
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
             }
 
-            // Masukkan ke frame
-            const dataURL = canvas.toDataURL('image/png');
-            images[photoCount].src = dataURL;
-            photoCount++;
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+            nomor++;
+        }
 
-            if (photoCount === 3) {
-                downloadBtn.style.display = "inline-block";
-                alert("3 Foto selesai diambil! Klik 'Simpan' untuk mendownload strip fotomu.");
+        function pilihStiker(stiker, elemen) {
+            document.querySelectorAll('.stiker-btn').forEach(btn => btn.classList.remove('aktif'));
+            if (stikerTerpilih === stiker) { stikerTerpilih = ""; }
+            else { stikerTerpilih = stiker; elemen.classList.add('aktif'); }
+        }
+
+        function tempelStiker(idCanvas, event) {
+            if (!stikerTerpilih) return alert("Pilih stikernya dulu di bawah kamera ya! 🎀");
+
+            let canvas = document.getElementById("foto" + idCanvas);
+            let ctx = canvas.getContext("2d");
+            let rect = canvas.getBoundingClientRect();
+            let x = (event.clientX - rect.left) * (canvas.width / rect.width);
+            let y = (event.clientY - rect.top) * (canvas.height / rect.height);
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.font = "38px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(stikerTerpilih, x, y);
+
+            let backupState = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            riwayatStiker.push({ id: idCanvas, data: backupState });
+        }
+
+        function undoStiker() {
+            if (riwayatStiker.length === 0) return alert("Belum ada stiker yang ditempel!");
+
+            let stikerTerakhir = riwayatStiker.pop();
+            let canvas = document.getElementById("foto" + stikerTerakhir.id);
+            let ctx = canvas.getContext("2d");
+
+            let sisaRiwayat = riwayatStiker.filter(item => item.id === stikerTerakhir.id);
+            if (sisaRiwayat.length > 0) {
+                ctx.putImageData(sisaRiwayat[sisaRiwayat.length - 1].data, 0, 0);
+            } else {
+                alert("Stiker di foto " + stikerTerakhir.id + " berhasil dibersihkan! ✨");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
             }
-        </script>
+        }
+
+        function resetFoto() {
+            for (let i = 1; i <= 4; i++) {
+                let canvas = document.getElementById("foto" + i);
+                let ctx = canvas.getContext("2d");
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            nomor = 1;
+            riwayatStiker = [];
+            stikerTerpilih = "";
+            document.querySelectorAll('.stiker-btn').forEach(btn => btn.classList.remove('aktif'));
+            pilihTema('pink');
+            gantiLayout('vertikal');
+        }
+
+        function downloadPhotostrip() {
+            let strip = document.getElementById("strip");
+            html2canvas(strip, { scale: 3, useCORS: true }).then(canvas => {
+                let link = document.createElement('a');
+                link.download = 'kawaii-photostrip-premium.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        document.getElementById("tanggal").innerHTML = "📅 " + new Date().toLocaleDateString("id-ID", { year: 'numeric', month: 'long', day: 'numeric' });
+
+        window.onload = startCamera;
+        pilihTema('pink');
+        setFilter('normal');
+    </script>
+
 </body>
+
 </html>
